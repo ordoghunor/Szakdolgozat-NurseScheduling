@@ -14,25 +14,6 @@ logfile = open("output.txt", "w")
 
 # ============== Szimulalt lehutes ===================
 
-
-# def general(nover, nap):
-#     s = []
-#     for i in range(nover):
-#         ss = []
-#         for j in range(nap):
-#             aux = random.randint(1, 3)
-#             if ss.__len__() > 0:
-#                 if ss[ss.__len__() - 1] == 3:
-#                     while aux == 1:
-#                         aux = random.randint(0, 3)
-#             szabad_e = random.randint(1, 7)
-#             if szabad_e == 1 or szabad_e == 6:  # 2/7 esellyes generaljunk szabad napokat
-#                 aux = 0
-#             ss.append(aux)
-#         s.append(ss)
-#     return s
-
-
 def feltolt_s(nover, nap):
     s = []
     for i in range(nover):
@@ -128,18 +109,6 @@ def valtoztat_neo(s, switch):
     return new_s
 
 
-# def valtoztatott(Ss):
-#     S = copy.deepcopy(Ss)
-#
-#     nover_index = random.randint(0, S.__len__()-1)
-#     nap_index = random.randint(0, S[nover_index].__len__()-1)
-#
-#     aux = random.randint(0, 3)
-#     while aux == S[nover_index][nap_index]:
-#         aux = random.randint(0, 3)
-#     S[nover_index][nap_index] = aux
-#     return S
-
 def decrement_linearis(t0, k):
     alpha = 0.5
     return t0 / (1 + alpha * k)
@@ -218,95 +187,6 @@ def minoseg_neo(s, alpha, beta, theta, consecutive):
     if hibak == 0:
         hibak = 1
     return 1 / hibak
-
-
-def minoseg(s, alpha, consecutive):
-    logger = []
-    napok = s[0].__len__()
-    noverek = s.__len__()
-
-    pontok = 0
-
-    # ejjeli valtas utan nem szabad reggeli valtasban dolgozni
-    if ne_legyen_ejjeli_utan_delelotti(s):
-        pontok += alpha
-    else:
-        return 0
-
-    # probaljuk hogy minden nover 5 napnal tobbet egymas utan ne dolgozzon
-    soft_error = alpha * 1
-    for nover in s:
-        streak = 0
-        szabad = 0
-        streak_list = []
-        for nap in nover:
-            if nap != 0:
-                streak += 1
-            else:
-                szabad += 1
-                streak_list.append(streak)
-                streak = 0
-        for i in streak_list:
-            if i > consecutive:
-                soft_error -= soft_error * 0.03
-    pontok += pontozas(soft_error)
-    logger.append(soft_error)
-
-    # a napok egyensulyozottak kell legyenek, probaljuk hogy kb minden nap ugyanannyi nover legyen szabad
-    soft_error = alpha
-    szabadnap_per_nap_optimum = noverek / 3.5
-    szabadok_per_nap = kiszamol_szabad_per_nap(s)
-    for i in szabadok_per_nap:
-        csokkentes = 0
-        diff = abs(szabadnap_per_nap_optimum - i)
-        if diff > 0.5:
-            csokkentes = 0.05
-            n = 1
-            while diff > n:
-                csokkentes += 0.05
-                n += 1
-        soft_error -= soft_error * csokkentes
-    pontok += pontozas(soft_error)
-    logger.append(soft_error)
-
-    # minden novernek probalunk adni 2 nap szabadod hetente
-    # soft_error = alpha * 1
-    # ennyi_kene = napok / 3.5
-    # szabad_per_nover = kiszamol_szabad_per_nover(s)
-    # for i in szabad_per_nover:
-    #     diff = abs(ennyi_kene - i)
-    #     csokkentes = 0
-    #     if diff > 0.5:
-    #         csokkentes = 0.03
-    #         n = 1
-    #         while diff > n:
-    #             csokkentes += 0.03
-    #             n += 1
-    #     soft_error -= soft_error * csokkentes
-    # pontok += pontozas(soft_error)
-    # logger.append(soft_error)
-
-    # Probaljuk egyenletesen elosztani a novereket minden munkaidopontban
-    soft_error = alpha * 1
-    for i in range(napok):
-        szabad, delelott, delutan, ejjel = histogram(s, i)
-        diff = abs(delelott - delutan) + abs(delutan - ejjel) + abs(delelott - ejjel)
-        csokkentes = 0
-        if diff >= 1:
-            csokkentes = 0.02
-            if diff >= 3:
-                csokkentes = 0.05
-                n = 3
-                while diff > n:
-                    csokkentes += 0.05
-                    n += 1
-        soft_error -= soft_error * csokkentes
-    pontok += pontozas(soft_error)
-    logger.append(soft_error)
-
-    logfile.write(str(logger) + '\n')
-
-    return pontok
 
 
 def kiszamol_szabad_per_nover(s):
