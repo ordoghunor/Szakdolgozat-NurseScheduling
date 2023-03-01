@@ -314,8 +314,8 @@ def hegymaszo(nover, nap, max_iteration, alpha, beta, theta, switch, consecutive
 # ====================================================
 
 def main():
-    nover = 27
-    nap = 10
+    nover = 15
+    nap = 7
     consecutive = 5  # dokumentacioban x-nek van emlitve
     alpha = 0.15     # egymas utani munkanapok betartasa
     beta = 0.14      # minden nap ugyanannyi munkas legyen szabad
@@ -326,9 +326,9 @@ def main():
 
     now = datetime.now()
     # subfolder = 'szimulalt_lehutes/'
-    subfolder = 'hegymaszo/'
+    # subfolder = 'hegymaszo/'
     date_time = now.strftime("%m%d%Y_%H%M%S")
-    filename = 'futtatasok/' + subfolder + str(nover) + '_' + str(nap) + '_' + str(max_iteration) + '_' + date_time + '.out'
+    filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + str(max_iteration) + '_' + date_time + '.out'
     outfile = open(filename, "w")
 
     print('Nover Nap Alpha Beta Theta Switch Consecutive MaxIteration')
@@ -341,8 +341,8 @@ def main():
                                                                  consecutive, max_iteration) + '\n')
     outfile.write('=====================================================================' + '\n')
 
-    # T = annealing(nover, nap, max_iteration, alpha, beta, theta, csere_per_valtoztatas, consecutive, fitness, outfile)
-    T = hegymaszo(nover, nap, max_iteration, alpha, beta, theta, csere_per_valtoztatas, consecutive, fitness, outfile)
+    T = annealing(nover, nap, max_iteration, alpha, beta, theta, csere_per_valtoztatas, consecutive, fitness, outfile)
+    # T = hegymaszo(nover, nap, max_iteration, alpha, beta, theta, csere_per_valtoztatas, consecutive, fitness, outfile)
 
     print('=====================================================================')
     print('Napok szerint dolgoznak: (0-szabad, 1-delelott, 2-delutan, 3-ejjel)')
