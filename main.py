@@ -1,7 +1,7 @@
-# Optimalizacios Algoritmusok - Projekt
+# Szakdolgozat
 # Nover beosztasi problema - Nurse Scheduling Problem/Nurse rostering problem
 # Ordog Hunor - ohim2065
-# 2023 Januar
+
 
 import copy
 import random
