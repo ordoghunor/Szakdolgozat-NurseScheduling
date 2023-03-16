@@ -1,4 +1,4 @@
-# Szakdolgozat
+# Szakdolgozat  
 # Nover beosztasi problema - Nurse Scheduling Problem/Nurse rostering problem
 # Ordog Hunor - ohim2065
 
@@ -13,6 +13,7 @@ from datetime import datetime
 logfile = open("output.txt", "w")
 
 # ============== Szimulalt lehutes ===================
+
 
 def feltolt_s(nover, nap):
     s = []
@@ -314,19 +315,17 @@ def hegymaszo(nover, nap, max_iteration, alpha, beta, theta, switch, consecutive
 # ====================================================
 
 def main():
-    nover = 15
+    nover = 12
     nap = 7
     consecutive = 5  # dokumentacioban x-nek van emlitve
     alpha = 0.15     # egymas utani munkanapok betartasa
     beta = 0.14      # minden nap ugyanannyi munkas legyen szabad
     theta = 0.18     # minden muszakban kb ugyanannyian dolgozzanak
-    max_iteration = 250000
+    max_iteration = 200000
     csere_per_valtoztatas = 2
     fitness = minoseg_neo
 
     now = datetime.now()
-    # subfolder = 'szimulalt_lehutes/'
-    # subfolder = 'hegymaszo/'
     date_time = now.strftime("%m%d%Y_%H%M%S")
     filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + str(max_iteration) + '_' + date_time + '.out'
     outfile = open(filename, "w")
