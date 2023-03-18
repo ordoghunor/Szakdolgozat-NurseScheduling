@@ -134,20 +134,20 @@ def fitness(s, nover, nap, alpha=2, beta=1, theta=1, u_sor_cserelve=-1, consecut
     hiba = 1
 
     hiba_1 = 0                      # nezzuk hogy ha be van-e tartva a maximalis egymas utani napok dolgozasa
-    for x in s:                     # x-el iteraljuk a novereket
+    for i in range(nover):                     # x-el iteraljuk a novereket
         streak, szabad = 0, 0
         streak_list = []
-        for y in x:                 # y-al iteraljuk a napokat
-            if y == 0:
+        for j in range(nap):                 # y-al iteraljuk a napokat
+            if s[i][j] == 0:
                 szabad += 1
                 streak_list.append(streak)
                 streak = 0
             else:
                 streak += 1
         streak_list.append(streak)
-        for i in streak_list:
-            if i > consecutive:
-                hiba_1 += i - consecutive
+        for k in streak_list:
+            if k > consecutive:
+                hiba_1 += k - consecutive
     hiba += hiba_1 * alpha
 
     hiba_2 = 0                       # nezzuk ha kb. minden nap ugyanannyi nover van szabad
@@ -177,7 +177,7 @@ def decrement_linearis(t, k):
     return t / (1 + alfa * k)
 
 
-def annealing(nover, nap, max_ite, alpha=2, beta=1, theta=1, consecutive=5, t=100000):
+def annealing(nover, nap, max_ite, alpha=2, beta=1, theta=1, t=100000):
     k = 0
 
     s = general(nover, nap)
@@ -216,8 +216,8 @@ def annealing(nover, nap, max_ite, alpha=2, beta=1, theta=1, consecutive=5, t=10
 
 
 def main():
-    nover = 12
-    nap = 10
+    nover = 27
+    nap = 7
     alpha = 1
     beta = 0.25
     theta = 0.275

@@ -28,9 +28,9 @@ def initialize_log(nover, nap, max_ite, alpha, beta, theta):
     date_time = now.strftime("%m%d%Y_%H%M%S")
     filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + str(max_ite) + '_' + date_time + '.out'
     outfile = open(filename, "w")
-    print('Nover Nap Alpha Beta Theta MaxIteration')
+    print('Nover Nap Alpha Beta  Theta   MaxIteration')
     print(
-        ' {}    {}    {}  {}   {}           {}'.format(nover, nap, alpha, beta, theta, max_ite))
+        ' {}    {}    {}  {}   {}     {}'.format(nover, nap, alpha, beta, theta, max_ite))
     print('=====================================================================')
 
     outfile.write('Nover Nap Alpha Beta Theta MaxIteration' + '\n')
