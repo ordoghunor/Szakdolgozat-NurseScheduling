@@ -207,5 +207,46 @@ class NurseScheduling:
                 kiir_aux = legjobb_fitness
         self._s = copy.deepcopy(legjobb)
 
+    def kiertekel_megszoritasok(self, consecutive=5):
+        hiba = 1
+
+        hiba_1 = 0  # nezzuk hogy ha be van-e tartva a maximalis egymas utani napok dolgozasa
+        for i in range(self.nurses):  # x-el iteraljuk a novereket
+            streak, szabad = 0, 0
+            streak_list = []
+            for j in range(self.days):  # y-al iteraljuk a napokat
+                if self._s[i][j] == 0:
+                    szabad += 1
+                    streak_list.append(streak)
+                    streak = 0
+                else:
+                    streak += 1
+            streak_list.append(streak)
+            for k in streak_list:
+                if k > consecutive:
+                    hiba_1 += k - consecutive
+        hiba += hiba_1 * self.alpha
+
+        hiba_2 = 0  # nezzuk ha kb. minden nap ugyanannyi nover van szabad
+        opt_sz_per_nap = self.nurses / 3.5  # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
+        szabadok = self.megszamol_szabadnover_per_nap(self._s)
+        also, felso = floor(opt_sz_per_nap), ceil(opt_sz_per_nap)
+        for i in szabadok:
+            if i != also and i != felso:
+                hiba_2 += abs(opt_sz_per_nap - i)
+        hiba += hiba_2 * self.beta
+
+        hiba_3 = 0
+        sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
+        nvr_p_msz_p_n = self.nurses / 3 * (
+                1 - sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
+        muszak = self.megszamol_napokra_munkasok(self._s)
+        for i in range(3):
+            for j in range(self.days):
+                if muszak[i][j] != floor(nvr_p_msz_p_n) and muszak[i][j] != ceil(nvr_p_msz_p_n):
+                    hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
+        hiba += hiba_3 * self.theta
+        return hiba_1, hiba_2, hiba_3
+
     def get_s(self):
         return self._s
