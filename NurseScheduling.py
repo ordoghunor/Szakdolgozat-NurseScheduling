@@ -38,10 +38,12 @@ class NurseScheduling:
     def _generate(self):
         self._s = np.zeros((self.nurses, self.days), dtype=int)
         szabadnap = self.days / 3.5
+        ejjeli_tura_aux, hiba_kovetes = random.randint(1, 3), -1
 
         for i in range(self.nurses):
             elosztva = (self.days - szabadnap) / 3
             while True:
+                hiba_kovetes = ejjeli_tura_aux
                 for j in range(1, 4):
                     e_aux = floor(elosztva)
                     while e_aux > 0:
@@ -52,11 +54,12 @@ class NurseScheduling:
                         e_aux -= 1
                 maradt_sz_napok = self.megszamol_nullas(i)
                 kiosztando_napok = maradt_sz_napok - szabadnap
-                ejjeli_tura_aux = 3
+                # ejjeli_tura_aux = -1
                 while floor(kiosztando_napok) != 0:
-                    munka_nap_adas = random.randint(1, 3)
-                    while munka_nap_adas == ejjeli_tura_aux:
-                        munka_nap_adas = random.randint(1, 3)
+                    munka_nap_adas = 1 + ejjeli_tura_aux % 3
+                    # munka_nap_adas = random.randint(1, 3)
+                    # while munka_nap_adas == ejjeli_tura_aux:
+                    #     munka_nap_adas = random.randint(1, 3)
                     ejjeli_tura_aux = munka_nap_adas
                     r = random.randint(0, self.days - 1)
                     while self._s[i][r] != 0:
@@ -77,6 +80,7 @@ class NurseScheduling:
                 if self.ellenoriz_sor_eros_megszoritas(self._s, i):
                     break
                 else:
+                    ejjeli_tura_aux = hiba_kovetes
                     for nulla_index in range(self.days):
                         self._s[i][nulla_index] = 0
 
