@@ -38,12 +38,12 @@ class NurseScheduling:
     def _generate(self):
         self._s = np.zeros((self.nurses, self.days), dtype=int)
         szabadnap = self.days / 3.5
-        ejjeli_tura_aux, hiba_kovetes = random.randint(1, 3), -1
+        elozo_munka_nap_adas, hiba_kovetes = random.randint(1, 3), -1
 
         for i in range(self.nurses):
             elosztva = (self.days - szabadnap) / 3
             while True:
-                hiba_kovetes = ejjeli_tura_aux
+                hiba_kovetes = elozo_munka_nap_adas
                 for j in range(1, 4):
                     e_aux = floor(elosztva)
                     while e_aux > 0:
@@ -54,13 +54,9 @@ class NurseScheduling:
                         e_aux -= 1
                 maradt_sz_napok = self.megszamol_nullas(i)
                 kiosztando_napok = maradt_sz_napok - szabadnap
-                # ejjeli_tura_aux = -1
                 while floor(kiosztando_napok) != 0:
-                    munka_nap_adas = 1 + ejjeli_tura_aux % 3
-                    # munka_nap_adas = random.randint(1, 3)
-                    # while munka_nap_adas == ejjeli_tura_aux:
-                    #     munka_nap_adas = random.randint(1, 3)
-                    ejjeli_tura_aux = munka_nap_adas
+                    munka_nap_adas = 1 + elozo_munka_nap_adas % 3
+                    elozo_munka_nap_adas = munka_nap_adas
                     r = random.randint(0, self.days - 1)
                     while self._s[i][r] != 0:
                         r = random.randint(0, self.days - 1)
@@ -70,7 +66,7 @@ class NurseScheduling:
                     r_uni = random.uniform(0, 1)
                     if r_uni > kiosztando_napok:
                         munka_nap_adas = random.randint(1, 3)
-                        while munka_nap_adas == ejjeli_tura_aux:
+                        while munka_nap_adas == elozo_munka_nap_adas:
                             munka_nap_adas = random.randint(1, 3)
                         r = random.randint(0, self.days - 1)
                         while self._s[i][r] != 0:
@@ -80,7 +76,7 @@ class NurseScheduling:
                 if self.ellenoriz_sor_eros_megszoritas(self._s, i):
                     break
                 else:
-                    ejjeli_tura_aux = hiba_kovetes
+                    elozo_munka_nap_adas = hiba_kovetes
                     for nulla_index in range(self.days):
                         self._s[i][nulla_index] = 0
 
@@ -250,6 +246,63 @@ class NurseScheduling:
                     hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
         hiba += hiba_3 * self.theta
         return hiba_1, hiba_2, hiba_3
+
+    def _init_genetic_populations(self, population_size):
+        g = np.zeros((population_size, self.nurses, self.days), dtype=int)
+        for i in range(population_size):
+            self._generate()
+            g[i] = self.get_s()
+        return g
+
+    def _cross_ga(self, p1, p2):
+        child = np.zeros((self.nurses, self.days), dtype=int)
+        for i in range(self.nurses):
+            r = random.uniform(0, 1)
+            if r < 0.5:
+                child[i] = p1[i]
+            else:
+                child[i] = p2[i]
+        return child
+
+    def genetic(self, population_size=20, mutation=0.2, cross=0.9):
+        g = self._init_genetic_populations(population_size)
+
+        gfit = np.zeros(population_size)
+        for i in range(population_size):
+            gfit[i] = self.fitness(g[i])
+
+        k = 0
+        while k < self.max_it:
+            new_population = np.zeros((population_size, self.nurses, self.days), dtype=int)
+            max1, max2 = (-1, 0.0), (-1, 0.0)   # select 2 best chromosomes
+            for i in range(population_size):
+                if gfit[i] > max1[1]:
+                    max2 = max1
+                    max1 = i, gfit[i]
+                elif gfit[i] > max2[1]:
+                    max2 = i, gfit[i]
+            new_population[0], gfit[0] = g[max1[0]], gfit[max1[0]]  # 2 best chromosomes are injected into the new pop.
+            new_population[1], gfit[1] = g[max2[0]], gfit[max2[0]]
+            for i in range(population_size - 2):
+                ii = i + 2
+                r = random.uniform(0, 1)
+                if r < mutation:
+                    u_sor = self._modify(g[ii])
+                    new_population[ii], gfit[ii] = g[ii], self.fitness(g[ii], u_sor)
+                elif r < cross:
+                    new_population[ii] = self._cross_ga(new_population[0], new_population[1])
+                    gfit[ii] = self.fitness(new_population[ii])
+                else:
+                    self._generate()
+                    new_population[ii] = self.get_s()
+                    gfit[ii] = self.fitness(new_population[ii])
+                g = copy.deepcopy(new_population)
+            k = k + 1
+        maxi = (-1, 0.0)
+        for i in range(population_size):
+            if gfit[i] > maxi[1]:
+                maxi = i, gfit[i]
+        return g[maxi[0]]
 
     def get_s(self):
         return self._s
