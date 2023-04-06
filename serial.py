@@ -1,22 +1,20 @@
 from NurseScheduling import NurseScheduling
 from kiiratasok import end_log, initialize_log
+from parameters import *
 import timeit
 
 
 def main():
-    # === PARAMETEREK ===
-    nover = 30
-    nap = 14
-    alpha = 1.15
-    beta = 0.25
-    theta = 0.28
-    max_it = 10000
-    # ===================
-
     outfile = initialize_log(nover, nap, max_it, alpha, beta, theta)
 
     n = NurseScheduling(nover, nap, alpha, beta, theta, max_it)
-    ido = timeit.timeit(lambda: n.annealing(), number=1)
+    ido = None
+    if method == 1:
+        ido = timeit.timeit(lambda: n.annealing(), number=1)
+    elif method == 2:
+        ido = timeit.timeit(lambda: n.genetic(population_size), number=1)
+    elif method == 3:
+        ido = timeit.timeit(lambda: n.evo_strategy(mu_, lambda_), number=1)
 
     end_log(n.get_s(), outfile)
     print('Performance: {}'.format(ido))
