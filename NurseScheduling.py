@@ -5,6 +5,18 @@ import random
 from numpy import floor, ceil
 
 
+def _check_gfit(gfit):
+    for i in gfit:
+        if i >= 1:
+            return False
+    return True
+
+
+def decrement_linearis(t, k):
+    alfa = 0.5
+    return t / (1 + alfa * k)
+
+
 class NurseScheduling:
     _s = None
 
@@ -168,10 +180,6 @@ class NurseScheduling:
 
         return 1 / hiba
 
-    def decrement_linearis(self, t, k):
-        alfa = 0.5
-        return t / (1 + alfa * k)
-
     def annealing(self, t=100000):
         k = 0
 
@@ -195,7 +203,7 @@ class NurseScheduling:
                     self._s = copy.deepcopy(w)
                     sfitness = wfitness
                 if t > 0.001:
-                    t = self.decrement_linearis(t, k)
+                    t = decrement_linearis(t, k)
                 if sfitness > legjobb_fitness:
                     legjobb = copy.deepcopy(self._s)
                     legjobb_fitness = sfitness
@@ -303,6 +311,49 @@ class NurseScheduling:
             if gfit[i] > maxi[1]:
                 maxi = i, gfit[i]
         return g[maxi[0]]
+
+    def _init_evo_strategy(self, _mu, _lambda):
+        g = np.zeros((_mu + _lambda, self.nurses, self.days), dtype=int)
+        gfit = np.zeros(_mu + _lambda)
+        for i in range(_mu):
+            self._generate()
+            g[i] = self.get_s()
+            gfit[i] = self.fitness(g[i])
+        return g, gfit
+
+    def _qsort_best_evo_strategy(self, bal, jobb, g, gfit):
+        k = bal + random.randint(0, 999999) % (jobb - bal + 1)
+        i = bal
+        j = jobb
+        while True:
+            while gfit[i] > gfit[k]:
+                i += 1
+            while gfit[j] < gfit[k]:
+                j -= 1
+            if i <= j:
+                gfit[i], gfit[j] = gfit[j], gfit[i]
+                g[i], g[j] = g[j], g[i]
+                i += 1
+                j -= 1
+            if i > j:
+                break
+        if i < jobb:
+            self._qsort_best_evo_strategy(i, jobb, g, gfit)
+        if j > bal:
+            self._qsort_best_evo_strategy(bal, j, g, gfit)
+
+    def evo_strategy(self, _mu, _lambda):
+        g, gfit = self._init_evo_strategy(_mu, _lambda)
+
+        k = 0
+        while k < self.max_it and _check_gfit(gfit):
+            for i in range(_lambda):
+                aux = copy.deepcopy(g[i % _mu])
+                u_sor = self._modify(aux)
+                g[i + _mu] = aux
+                gfit[i + _mu] = self.fitness(aux, u_sor_cserelve=u_sor)
+            self._qsort_best_evo_strategy(0, _mu + _lambda - 1, g, gfit)
+        self._s = g[0]
 
     def get_s(self):
         return self._s
