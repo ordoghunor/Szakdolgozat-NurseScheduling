@@ -2,7 +2,7 @@
 
 <h3>Hard Constraint(s):</h3>
   <ul>  
-  <li>A nurse cannot work an evening(3) and right after a morning shift</li>
+  <li>A nurse cannot work an evening(3) and right after a morning(1) shift</li>
   </ul>  
 
 <h3>Soft constraint(s):</h3>
