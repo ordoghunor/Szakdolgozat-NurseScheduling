@@ -5,9 +5,9 @@ import timeit
 
 
 def main():
-    outfile = initialize_log(nover, nap, max_it, alpha, beta, theta)
+    outfile = initialize_log(nover, nap, max_it, alpha, beta, theta, mu_, lambda_, method, eloszlas, gamma)
 
-    n = NurseScheduling(nover, nap, alpha, beta, theta, max_it)
+    n = NurseScheduling(nover, nap, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, e_hetre)
     ido = None
     if method == 1:
         ido = timeit.timeit(lambda: n.annealing(), number=1)
@@ -19,11 +19,13 @@ def main():
     end_log(n.get_s(), outfile)
     print('Performance: {}'.format(ido))
     outfile.write('Performance: {}'.format(ido))
+    print('fitness: {}'.format(n.fitness(n.get_s())))
 
-    (h1, h2, h3) = n.kiertekel_megszoritasok(n.get_s())
+    h1, h2, h3, h4 = n.fitness(n.get_s(), kiertekel=True)
     print('h1 = ', h1)
     print('h2 = ', h2)
     print('h3 = ', h3)
+    print('h3 = ', h4)
 
 
 if __name__ == '__main__':

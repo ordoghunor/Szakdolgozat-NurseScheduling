@@ -13,13 +13,13 @@ def run_process(q, nover, nap, max_it, alpha, beta, theta):
 
 def main():
     # === PARAMETEREK ===
-    nover = 30
+    nover = 21
     nap = 14
     alpha = 1.15
     beta = 0.25
     theta = 0.28
     max_it = 10000
-    process_count = 5
+    process_count = 6
     # ===================
 
     outfile = initialize_log(nover, nap, max_it, alpha, beta, theta)
@@ -59,10 +59,6 @@ def main():
     outfile.write('Performance: {}'.format(ido))
 
     end_log(best_s, outfile)
-    (h1, h2, h3) = n.kiertekel_megszoritasok(best_s)
-    print('h1 = ', h1)
-    print('h2 = ', h2)
-    print('h3 = ', h3)
 
 
 if __name__ == '__main__':

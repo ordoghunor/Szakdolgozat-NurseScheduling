@@ -1,41 +1,23 @@
 from datetime import datetime
+from NurseScheduling import kiszamol_szabad_per_nover, kiszamol_szabad_per_nap
 
 
-def kiszamol_szabad_per_nover(s):
-    szabad = []
-    for _ in s:
-        szabad.append(0)
-    for i in range(s.__len__()):
-        for j in s[i]:
-            if j == 0:
-                szabad[i] += 1
-    return szabad
-
-
-def kiszamol_szabad_per_nap(s):
-    szabadok_per_nap = []
-    for _ in s[0]:
-        szabadok_per_nap.append(0)
-    for i in s:
-        for j in range(i.__len__()):
-            if i[j] == 0:
-                szabadok_per_nap[j] += 1
-    return szabadok_per_nap
-
-
-def initialize_log(nover, nap, max_ite, alpha, beta, theta):
+def initialize_log(nover, nap, max_ite, alpha, beta, theta, mu_, lambda_, method, eloszlas, gamma):
     now = datetime.now()
     date_time = now.strftime("%m%d%Y_%H%M%S")
-    filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + str(max_ite) + '_' + date_time + '.out'
+    filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + date_time + '.out'
     outfile = open(filename, "w")
-    print('Nover Nap Alpha Beta  Theta   MaxIteration')
+    print('Nover Nap Alpha Beta Theta gamma MaxIte Mu Lambda method eloszlas')
     print(
-        ' {}    {}    {}  {}   {}     {}'.format(nover, nap, alpha, beta, theta, max_ite))
+        '{}   {}   {}  {}   {}  {} {} {}   {}       {}    {}'.format(nover, nap, alpha, beta, theta, gamma,
+                                                                max_ite, mu_, lambda_, method, eloszlas))
     print('=====================================================================')
 
-    outfile.write('Nover Nap Alpha Beta Theta MaxIteration' + '\n')
+    outfile.write('Nover Nap Alpha Beta Theta gamma MaxIte Mu Lambda method eloszlas' + '\n')
     outfile.write(
-        ' {}    {}    {}  {}   {}         {}'.format(nover, nap, alpha, beta, theta, max_ite) + '\n')
+        '{}   {}   {}  {}   {}  {} {} {}   {}       {}    {}'.format(nover, nap, alpha, beta, theta, gamma,
+                                                                max_ite, mu_, lambda_, method, eloszlas) +
+        '\n')
     outfile.write('=====================================================================' + '\n')
     return outfile
 

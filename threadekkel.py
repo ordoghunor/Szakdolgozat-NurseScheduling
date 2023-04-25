@@ -51,10 +51,6 @@ def main():
     outfile.write('Performance: {}'.format(ido))
 
     end_log(best_s, outfile)
-    (h1, h2, h3) = n[0].kiertekel_megszoritasok(best_s)
-    print('h1 = ', h1)
-    print('h2 = ', h2)
-    print('h3 = ', h3)
 
 
 if __name__ == '__main__':

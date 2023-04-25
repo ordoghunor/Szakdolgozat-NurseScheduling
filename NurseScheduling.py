@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import random
 from numpy import floor, ceil
+from statistics import mean
 
 
 def _check_gfit(gfit):
@@ -17,16 +18,53 @@ def decrement_linearis(t, k):
     return t / (1 + alfa * k)
 
 
+def kiszamol_szabad_per_nover(s):
+    szabad = []
+    for _ in s:
+        szabad.append(0)
+    for i in range(s.__len__()):
+        for j in s[i]:
+            if j == 0:
+                szabad[i] += 1
+    return szabad
+
+def kiszamol_szabad_per_nap(s):
+    szabadok_per_nap = []
+    for _ in s[0]:
+        szabadok_per_nap.append(0)
+    for i in s:
+        for j in range(i.__len__()):
+            if i[j] == 0:
+                szabadok_per_nap[j] += 1
+    return szabadok_per_nap
+
+
+def _szabadnap_hibak(s):
+    hiba = 0
+    sz = kiszamol_szabad_per_nover(s)
+    kozep = mean(sz)
+    k1 = floor(kozep)
+    k2 = ceil(kozep)
+    for i in sz:
+        if i < k1 or i > k2:
+            hiba += abs(kozep - i)
+    return hiba
+
+
 class NurseScheduling:
     _s = None
 
-    def __init__(self, nurses, days, alpha, beta, theta, max_it):
+    def __init__(self, nurses, days, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, e_hetre=None):
         self.nurses = nurses
         self.days = days
         self.alpha = alpha
         self.beta = beta
         self.theta = theta
+        self.gamma = gamma
         self.max_it = max_it
+        self.sleep_rule = sleep_rule
+        self.eloszlas = eloszlas
+        self.e_hetre = e_hetre
 
     def megszamol_nullas(self, sor):
         nulla = 0
@@ -47,7 +85,7 @@ class NurseScheduling:
             elozo = s[sor][j]
         return True
 
-    def _generate(self):
+    def _generate_uniform(self):
         self._s = np.zeros((self.nurses, self.days), dtype=int)
         szabadnap = self.days / 3.5
         elozo_munka_nap_adas, hiba_kovetes = random.randint(1, 3), -1
@@ -92,14 +130,50 @@ class NurseScheduling:
                     for nulla_index in range(self.days):
                         self._s[i][nulla_index] = 0
 
+    def _generate_as_expected(self):
+        while True:
+            self._s = np.zeros((self.nurses, self.days), dtype=int)
+            for i in range(7):
+                for j in range(3):
+                    aux = self.e_hetre[i][j]
+                    while aux > 0:
+                        megvan = 0
+                        while megvan == 0:
+                            r = random.randint(0, self.nurses-1)
+                            ii = i
+                            while ii < self.days:
+                                if self._s[r][ii] == 0:
+                                    self._s[r][ii] = j + 1
+                                    megvan = 1
+                                ii += 7
+                        aux -= 1
+            if self.ne_legyen_ejjeli_utan_delelotti(self._s):
+                break
+
+    def _generate(self):
+        if self.eloszlas == 1:
+            self._generate_uniform()
+        elif self.eloszlas == 2:
+            self._generate_as_expected()
+
     def _modify(self, s):
-        nx = random.randint(0, self.nurses - 1)
-        n1 = random.randint(0, self.days - 1)
-        n2 = random.randint(0, self.days - 1)
-        while n2 == n1:
-            n2 = random.randint(0, self.days - 1)
-        s[nx][n1], s[nx][n2] = s[nx][n2], s[nx][n1]
-        return nx
+        # swap 2 random
+        if self.eloszlas == 2 and random.uniform(0, 1) < 0.1:
+            nx: int = random.randint(0, self.days - 1)
+            n1: int = random.randint(0, self.nurses - 1)
+            n2: int = random.randint(0, self.nurses - 1)
+            while n1 == n2:
+                n2 = random.randint(0, self.nurses - 1)
+            s[n1][nx], s[n2][nx] = s[n2][nx], s[n1][nx]
+            return n1
+        else:
+            nx: int = random.randint(0, self.nurses - 1)
+            n1: int = random.randint(0, self.days - 1)
+            n2: int = random.randint(0, self.days - 1)
+            while n2 == n1:
+                n2 = random.randint(0, self.days - 1)
+            s[nx][n1], s[nx][n2] = s[nx][n2], s[nx][n1]
+            return nx
 
     def ne_legyen_ejjeli_utan_delelotti(self, s):
         for i in range(self.nurses):
@@ -134,7 +208,32 @@ class NurseScheduling:
                         ejjel[j] += 1
         return delelott, delutan, ejjel
 
-    def fitness(self, s, u_sor_cserelve=-1, consecutive=5):
+    def sleep_rule_check(self, s):
+        before = None
+        hiba = 0
+        for i in range(self.nurses):
+            for j in range(self.days):
+                if j == 0:
+                    before = s[i][j]
+                else:
+                    if before == 3 and s[i][j] == 2:
+                        hiba += 1
+                    before = s[i][j]
+        return hiba
+
+    def hetre_eloszlas(self, s):
+        hiba = 0
+        hetre_aktualis = np.zeros((self.days, 3), dtype=int)
+        for j in range(self.days):
+            for i in range(self.nurses):
+                if s[i][j] > 0:
+                    hetre_aktualis[j][s[i][j] - 1] += 1
+        for i in range(self.days):
+            for j in range(3):
+                hiba += abs(self.e_hetre[i % 7][j] - hetre_aktualis[i][j])
+        return hiba
+
+    def fitness(self, s, u_sor_cserelve=-1, consecutive=5, kiertekel=False):
         hiba = 1
         if u_sor_cserelve == -1 and not self.ne_legyen_ejjeli_utan_delelotti(s):
             hiba += 100
@@ -158,27 +257,42 @@ class NurseScheduling:
                     hiba_1 += k - consecutive
         hiba += hiba_1 * self.alpha
 
-        hiba_2 = 0  # nezzuk ha kb. minden nap ugyanannyi nover van szabad
-        opt_sz_per_nap = self.nurses / 3.5  # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
-        szabadok = self.megszamol_szabadnover_per_nap(s)
-        also, felso = floor(opt_sz_per_nap), ceil(opt_sz_per_nap)
-        for i in szabadok:
-            if i != also and i != felso:
-                hiba_2 += abs(opt_sz_per_nap - i)
+        hiba_2 = 0
+        if self.eloszlas == 1:
+            opt_sz_per_nap = self.nurses / 3.5  # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
+            szabadok = self.megszamol_szabadnover_per_nap(s)  # nezzuk ha kb. minden nap ugyanannyi nover van szabad
+            also, felso = floor(opt_sz_per_nap), ceil(opt_sz_per_nap)
+            for i in szabadok:
+                if i != also and i != felso:
+                    hiba_2 += abs(opt_sz_per_nap - i)
+        elif self.eloszlas == 2:
+            hiba_2 += _szabadnap_hibak(s)
         hiba += hiba_2 * self.beta
 
         hiba_3 = 0
-        sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
-        nvr_p_msz_p_n = self.nurses / 3 * (
-                    1 - sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
-        muszak = self.megszamol_napokra_munkasok(s)
-        for i in range(3):
-            for j in range(self.days):
-                if muszak[i][j] != floor(nvr_p_msz_p_n) and muszak[i][j] != ceil(nvr_p_msz_p_n):
-                    hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
-        hiba += hiba_3 * self.theta
+        if self.eloszlas == 1:
+            sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
+            nvr_p_msz_p_n = self.nurses / 3 * (
+                        1 - sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
+            muszak = self.megszamol_napokra_munkasok(s)
+            for i in range(3):
+                for j in range(self.days):
+                    if muszak[i][j] != floor(nvr_p_msz_p_n) and muszak[i][j] != ceil(nvr_p_msz_p_n):
+                        hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
+            hiba += hiba_3 * self.theta
+        elif self.eloszlas == 2:
+            hiba_3 += self.hetre_eloszlas(s)
+        hiba += hiba_3 * self.gamma
 
-        return 1 / hiba
+        hiba_4 = 0
+        if self.sleep_rule == 2:
+            hiba_4 = self.sleep_rule_check(s)
+            hiba += hiba_4
+
+        if kiertekel:
+            return hiba_1, hiba_2, hiba_3, hiba_4
+        else:
+            return 1 / hiba
 
     def annealing(self, t=100000):
         k = 0
@@ -188,7 +302,7 @@ class NurseScheduling:
         legjobb_fitness = self.fitness(legjobb)
         line_counter, kiir_aux = 1, 0
 
-        while k < self.max_it:
+        while k < self.max_it and legjobb_fitness < 1:
             w = copy.deepcopy(self._s)
             unap = self._modify(w)
             r = random.uniform(0, 1)
@@ -213,47 +327,6 @@ class NurseScheduling:
                 line_counter += 1
                 kiir_aux = legjobb_fitness
         self._s = copy.deepcopy(legjobb)
-
-    def kiertekel_megszoritasok(self, s, consecutive=5):
-        hiba = 1
-
-        hiba_1 = 0  # nezzuk hogy ha be van-e tartva a maximalis egymas utani napok dolgozasa
-        for i in range(self.nurses):  # x-el iteraljuk a novereket
-            streak, szabad = 0, 0
-            streak_list = []
-            for j in range(self.days):  # y-al iteraljuk a napokat
-                if s[i][j] == 0:
-                    szabad += 1
-                    streak_list.append(streak)
-                    streak = 0
-                else:
-                    streak += 1
-            streak_list.append(streak)
-            for k in streak_list:
-                if k > consecutive:
-                    hiba_1 += k - consecutive
-        hiba += hiba_1 * self.alpha
-
-        hiba_2 = 0  # nezzuk ha kb. minden nap ugyanannyi nover van szabad
-        opt_sz_per_nap = self.nurses / 3.5  # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
-        szabadok = self.megszamol_szabadnover_per_nap(s)
-        also, felso = floor(opt_sz_per_nap), ceil(opt_sz_per_nap)
-        for i in szabadok:
-            if i != also and i != felso:
-                hiba_2 += abs(opt_sz_per_nap - i)
-        hiba += hiba_2 * self.beta
-
-        hiba_3 = 0
-        sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
-        nvr_p_msz_p_n = self.nurses / 3 * (
-                1 - sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
-        muszak = self.megszamol_napokra_munkasok(s)
-        for i in range(3):
-            for j in range(self.days):
-                if muszak[i][j] != floor(nvr_p_msz_p_n) and muszak[i][j] != ceil(nvr_p_msz_p_n):
-                    hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
-        hiba += hiba_3 * self.theta
-        return hiba_1, hiba_2, hiba_3
 
     def _init_genetic_populations(self, population_size):
         g = np.zeros((population_size, self.nurses, self.days), dtype=int)
@@ -351,8 +424,12 @@ class NurseScheduling:
                 aux = copy.deepcopy(g[i % _mu])
                 u_sor = self._modify(aux)
                 g[i + _mu] = aux
-                gfit[i + _mu] = self.fitness(aux, u_sor_cserelve=u_sor)
+                if self.eloszlas == 1:
+                    gfit[i + _mu] = self.fitness(aux, u_sor_cserelve=u_sor)
+                elif self.eloszlas == 2:
+                    gfit[i + _mu] = self.fitness(aux)
             self._qsort_best_evo_strategy(0, _mu + _lambda - 1, g, gfit)
+            k += 1
         self._s = g[0]
 
     def get_s(self):
