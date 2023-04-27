@@ -13,6 +13,39 @@ def _check_gfit(gfit):
     return True
 
 
+def partition(arr, left, r, arr2):
+    x = arr[r]
+    i = left
+    for j in range(left, r):
+        if arr[j] <= x:
+            arr[i], arr[j] = arr[j], arr[i]
+            arr2[i], arr2[j] = arr2[j], arr2[i]
+            i += 1
+    arr[i], arr[r] = arr[r], arr[i]
+    arr2[i], arr2[r] = arr2[r], arr2[i]
+    return i
+
+
+def kth_smallest(arr, left, r, k, arr2):
+    if 0 < k <= r - left + 1:
+        index = partition(arr, left, r, arr2)
+        if index - left == k - 1:
+            return arr[index]
+        if index - left > k - 1:
+            return kth_smallest(arr, left, index - 1, k, arr2)
+        return kth_smallest(arr, index + 1, r, k - index + left - 1, arr2)
+
+
+def larger_elements_upfront(arr, arr2, n, k):
+    kth = kth_smallest(arr, 0, n - 1, k, arr2)
+    j = 0
+    for i in range(n - 1):
+        if arr[i] >= kth:
+            arr[i], arr[j] = arr[j], arr[i]
+            arr2[i], arr2[j] = arr2[j], arr2[i]
+            j += 1
+
+
 def decrement_linearis(t, k):
     alfa = 0.5
     return t / (1 + alfa * k)
@@ -131,6 +164,32 @@ class NurseScheduling:
                     for nulla_index in range(self.days):
                         self._s[i][nulla_index] = 0
 
+    # def _generate_as_expected(self):
+    #     self._s = np.zeros((self.nurses, self.days), dtype=int)
+    #     muszak = np.zeros(3, dtype=int)
+    #     for i in range(7):
+    #         for j in range(3):
+    #             muszak[j] += self.e_hetre[i][j]
+    #     for i in range(3):
+    #         k = muszak[i]
+    #         while k > 0:
+    #             r = random.randint(0, self.nurses - 1)
+    #             x = random.randint(0, self.days - 1)
+    #             if i == 0:
+    #                 while self._s[r][x] != 0 or (x > 0 and self._s[r][x-1] == 3):
+    #                     r = random.randint(0, self.nurses - 1)
+    #                     x = random.randint(0, self.days - 1)
+    #             elif i == 1:
+    #                 while self._s[r][x] != 0:
+    #                     r = random.randint(0, self.nurses - 1)
+    #                     x = random.randint(0, self.days - 1)
+    #             elif i == 2:
+    #                 while self._s[r][x] != 0 or (x + 1 < self.days and self._s[r][x + 1] == 1):
+    #                     r = random.randint(0, self.nurses - 1)
+    #                     x = random.randint(0, self.days - 1)
+    #             self._s[r][x] = i + 1
+    #             k -= 1
+
     def _generate_as_expected(self):
         while True:
             self._s = np.zeros((self.nurses, self.days), dtype=int)
@@ -140,7 +199,7 @@ class NurseScheduling:
                     while aux > 0:
                         megvan = 0
                         while megvan == 0:
-                            r = random.randint(0, self.nurses-1)
+                            r = random.randint(0, self.nurses - 1)
                             ii = i
                             while ii < self.days:
                                 if self._s[r][ii] == 0:
@@ -269,7 +328,7 @@ class NurseScheduling:
             for i in szabadok:
                 if i != also and i != felso:
                     hiba_2 += abs(opt_sz_per_nap - i)
-        elif self.eloszlas == 2:
+        elif self.eloszlas == 2:            # preciz eloszlasnal, probaljuk kiegyenliteni a noverek szabadnapjait
             hiba_2 += _szabadnap_hibak(s)
         hiba += hiba_2 * self.beta
 
@@ -433,6 +492,7 @@ class NurseScheduling:
                 elif self.eloszlas == 2:
                     gfit[i + _mu] = self.fitness(aux)
             self._qsort_best_evo_strategy(0, _mu + _lambda - 1, g, gfit)
+            # larger_elements_upfront(gfit, g, _mu+_lambda, _lambda+1)
             k += 1
         self._s = g[0]
 
