@@ -28,6 +28,7 @@ def kiszamol_szabad_per_nover(s):
                 szabad[i] += 1
     return szabad
 
+
 def kiszamol_szabad_per_nap(s):
     szabadok_per_nap = []
     for _ in s[0]:
@@ -144,7 +145,10 @@ class NurseScheduling:
                             while ii < self.days:
                                 if self._s[r][ii] == 0:
                                     self._s[r][ii] = j + 1
-                                    megvan = 1
+                                    if not self.ellenoriz_sor_eros_megszoritas(self._s, r):
+                                        self._s[r][ii] = 0
+                                    else:
+                                        megvan = 1
                                 ii += 7
                         aux -= 1
             if self.ne_legyen_ejjeli_utan_delelotti(self._s):

@@ -1,6 +1,6 @@
 
 # === PARAMETEREK ===
-nover = 23          # number of nurses
+nover = 24          # number of nurses
 nap = 14            # days to do the schedule
 alpha = 1.15        # fitness parameter - consecutive dolgozas
 beta = 0.25         # fitness parameter - szabadnap
@@ -13,7 +13,7 @@ method = 3          # 1-annealing, 2-genetic, 3-hybridEvolution
 sleep_rule = 2      # 1-after nightshift can come [2,3,0], 2-after nightshift can come only [3,0]
 max_cons = 5        # soft constraint - max consecutive working days
 # ===================
-eloszlas = 1        # 1-egyenletes, 2-minden muszakra kulon
+eloszlas = 2        # 1-egyenletes, 2-minden muszakra kulon
 e_hetfo = 6, 5, 3   # [0] delelott, [1] delutan, [2] ejjel
 e_kedd = 8, 6, 3    # [0] delelott, [1] delutan, [2] ejjel
 e_szerda = 9, 7, 5  # [0] delelott, [1] delutan, [2] ejjel
