@@ -1,64 +1,53 @@
 from NurseScheduling import NurseScheduling
 from kiiratasok import end_log, initialize_log
 from multiprocessing import Process, Queue
+from parameters import *
 import time
 
 
-def run_process(q, nover, nap, max_it, alpha, beta, theta):
-    n = NurseScheduling(nover, nap, alpha, beta, theta, max_it)
-    n.annealing()
-    q.put(n.get_s())
+def run_process(q):
+    n = NurseScheduling(nover, nap, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, max_cons, zeta, oszlop_csere, e_hetre)
+    n.annealing(t0)
+    q.put(n)
     return
 
 
 def main():
-    # === PARAMETEREK ===
-    nover = 21
-    nap = 14
-    alpha = 1.15
-    beta = 0.25
-    theta = 0.28
-    max_it = 10000
-    process_count = 6
-    # ===================
 
-    outfile = initialize_log(nover, nap, max_it, alpha, beta, theta)
+    outfile = initialize_log()
 
-    p, q = [], []
+    queue = Queue()
+    p = []
     for i in range(process_count):
-        queue_aux = Queue()
-        q.append(queue_aux)
-        p.append(Process(target=run_process, args=(queue_aux, nover, nap, max_it, alpha, beta, theta)))
+        p.append(Process(target=run_process, args=(queue,)))
 
     start = time.time()
 
     for i in p:
         i.start()
 
-    results = []
-    for i in q:
-        results.append(i.get())
+    res = queue.get()
+    queue.close()
 
     for i in p:
-        i.join()
+        if i.is_alive():
+            i.terminate()
 
     end = time.time()
     ido = end - start
 
-    n = NurseScheduling(nover, nap, alpha, beta, theta, max_it)
+    fitnes = res.fitness(res.get_s())
+    h1, h2, h3, h4 = res.fitness(res.get_s(), kiertekel=True)
 
-    best_fitness = 0
-    best_s = None
-    for i in results:
-        aux_fitness = n.fitness(i)
-        if aux_fitness > best_fitness:
-            best_fitness = aux_fitness
-            best_s = i
-
+    end_log(res.get_s(), outfile)
     print('Performance: {}'.format(ido))
+    print('Fitness: {}'.format(fitnes))
     outfile.write('Performance: {}'.format(ido))
 
-    end_log(best_s, outfile)
+    print('h1 = ', h1)
+    print('h2 = ', h2)
+    print('h3 = ', h3)
+    print('h3 = ', h4)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,12 @@ import numpy as np
 import random
 from numpy import floor, ceil
 from statistics import mean
+from tabulate import tabulate
+from parameters import method
 
+HARD_CONS_PENALTY = 1000
+SZABAD, DELELOTTI, DELUTANI, EJJELI = 0, 1, 2, 3
+MUSZAKOK = 3
 
 def _check_gfit(gfit):
     for i in gfit:
@@ -88,7 +93,7 @@ def _szabadnap_hibak(s):
 class NurseScheduling:
     _s = None
 
-    def __init__(self, nurses, days, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, e_hetre=None):
+    def __init__(self, nurses, days, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, consecutive, zeta, oszlop_csere, e_hetre=None):
         self.nurses = nurses
         self.days = days
         self.alpha = alpha
@@ -99,6 +104,14 @@ class NurseScheduling:
         self.sleep_rule = sleep_rule
         self.eloszlas = eloszlas
         self.e_hetre = e_hetre
+        self.consecutive = consecutive
+        self.zeta = zeta
+        self.oszlop_csere = oszlop_csere
+
+        self.opt_sz_per_nap = self.nurses / 3.5     # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
+        self.sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
+        self.nvr_p_msz_p_n = self.nurses / 3 * abs(
+                1 - self.sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
 
     def megszamol_nullas(self, sor):
         nulla = 0
@@ -114,7 +127,7 @@ class NurseScheduling:
             if elso:
                 elso = False
             else:
-                if elozo == 3 and s[sor][j] == 1:
+                if elozo == EJJELI and s[sor][j] == DELELOTTI:
                     return False
             elozo = s[sor][j]
         return True
@@ -164,44 +177,30 @@ class NurseScheduling:
                     for nulla_index in range(self.days):
                         self._s[i][nulla_index] = 0
 
-    # def _generate_as_expected(self):
-    #     self._s = np.zeros((self.nurses, self.days), dtype=int)
-    #     muszak = np.zeros(3, dtype=int)
-    #     for i in range(7):
-    #         for j in range(3):
-    #             muszak[j] += self.e_hetre[i][j]
-    #     for i in range(3):
-    #         k = muszak[i]
-    #         while k > 0:
-    #             r = random.randint(0, self.nurses - 1)
-    #             x = random.randint(0, self.days - 1)
-    #             if i == 0:
-    #                 while self._s[r][x] != 0 or (x > 0 and self._s[r][x-1] == 3):
-    #                     r = random.randint(0, self.nurses - 1)
-    #                     x = random.randint(0, self.days - 1)
-    #             elif i == 1:
-    #                 while self._s[r][x] != 0:
-    #                     r = random.randint(0, self.nurses - 1)
-    #                     x = random.randint(0, self.days - 1)
-    #             elif i == 2:
-    #                 while self._s[r][x] != 0 or (x + 1 < self.days and self._s[r][x + 1] == 1):
-    #                     r = random.randint(0, self.nurses - 1)
-    #                     x = random.randint(0, self.days - 1)
-    #             self._s[r][x] = i + 1
-    #             k -= 1
+    def _megfelel_keres_eredmeny(self):
+        check_tomb = np.zeros(3, dtype=int)
+        for i in range(self.nurses):
+            for j in range(self.days):
+                if self._s[i][j] > 0:
+                    check_tomb[self._s[i][j] - 1] += 1
+        print(check_tomb)
 
     def _generate_as_expected(self):
+        check_tomb_asking = np.zeros(3, dtype=int)
+        for i in range(7):
+            for j in range(3):
+                check_tomb_asking[j] += self.e_hetre[i][j]
         while True:
             self._s = np.zeros((self.nurses, self.days), dtype=int)
-            for i in range(7):
+            for i in range(self.days):
                 for j in range(3):
-                    aux = self.e_hetre[i][j]
+                    aux = self.e_hetre[i % 7][j]
                     while aux > 0:
                         megvan = 0
                         while megvan == 0:
                             r = random.randint(0, self.nurses - 1)
-                            ii = i
-                            while ii < self.days:
+                            ii = i % 7
+                            while ii < self.days and megvan == 0:
                                 if self._s[r][ii] == 0:
                                     self._s[r][ii] = j + 1
                                     if not self.ellenoriz_sor_eros_megszoritas(self._s, r):
@@ -211,6 +210,7 @@ class NurseScheduling:
                                 ii += 7
                         aux -= 1
             if self.ne_legyen_ejjeli_utan_delelotti(self._s):
+                self._megfelel_keres_eredmeny()
                 break
 
     def _generate(self):
@@ -221,7 +221,7 @@ class NurseScheduling:
 
     def _modify(self, s):
         # swap 2 random
-        if self.eloszlas == 2 and random.uniform(0, 1) < 0.1:
+        if self.eloszlas == 2 and random.uniform(0, 1) < self.oszlop_csere:
             nx: int = random.randint(0, self.days - 1)
             n1: int = random.randint(0, self.nurses - 1)
             n2: int = random.randint(0, self.nurses - 1)
@@ -242,8 +242,8 @@ class NurseScheduling:
         for i in range(self.nurses):
             elozo = -1
             for j in range(self.days):
-                if elozo > 0:
-                    if s[i][j] == 1 and elozo == 3:
+                if elozo > SZABAD:
+                    if s[i][j] == DELELOTTI and elozo == EJJELI:
                         return False
                 elozo = s[i][j]
         return True
@@ -279,36 +279,38 @@ class NurseScheduling:
                 if j == 0:
                     before = s[i][j]
                 else:
-                    if before == 3 and s[i][j] == 2:
+                    if before == EJJELI and s[i][j] == DELUTANI:
                         hiba += 1
                     before = s[i][j]
         return hiba
 
     def hetre_eloszlas(self, s):
         hiba = 0
-        hetre_aktualis = np.zeros((self.days, 3), dtype=int)
+        hetre_aktualis = np.zeros((self.days, MUSZAKOK), dtype=int)
         for j in range(self.days):
             for i in range(self.nurses):
-                if s[i][j] > 0:
+                if s[i][j] > SZABAD:
                     hetre_aktualis[j][s[i][j] - 1] += 1
         for i in range(self.days):
-            for j in range(3):
+            for j in range(MUSZAKOK):
                 hiba += abs(self.e_hetre[i % 7][j] - hetre_aktualis[i][j])
         return hiba
 
-    def fitness(self, s, u_sor_cserelve=-1, consecutive=5, kiertekel=False):
+    def fitness(self, s, u_sor_cserelve=-1, kiertekel=False):
         hiba = 1
         if u_sor_cserelve == -1 and not self.ne_legyen_ejjeli_utan_delelotti(s):
-            hiba += 100
+            hiba += HARD_CONS_PENALTY
         elif not self.ellenoriz_sor_eros_megszoritas(s, u_sor_cserelve):
-            hiba += 100
+            hiba += HARD_CONS_PENALTY
+            if method == 1:
+                return 0
 
         hiba_1 = 0  # nezzuk hogy ha be van-e tartva a maximalis egymas utani napok dolgozasa
         for i in range(self.nurses):  # x-el iteraljuk a novereket
             streak, szabad = 0, 0
             streak_list = []
             for j in range(self.days):  # y-al iteraljuk a napokat
-                if s[i][j] == 0:
+                if s[i][j] == SZABAD:
                     szabad += 1
                     streak_list.append(streak)
                     streak = 0
@@ -316,48 +318,44 @@ class NurseScheduling:
                     streak += 1
             streak_list.append(streak)
             for k in streak_list:
-                if k > consecutive:
-                    hiba_1 += k - consecutive
+                if k > self.consecutive:
+                    hiba_1 += k - self.consecutive
         hiba += hiba_1 * self.alpha
 
         hiba_2 = 0
         if self.eloszlas == 1:
-            opt_sz_per_nap = self.nurses / 3.5  # optimalisan ennyi szabadnapos nover kellene legyen 1 nap
             szabadok = self.megszamol_szabadnover_per_nap(s)  # nezzuk ha kb. minden nap ugyanannyi nover van szabad
-            also, felso = floor(opt_sz_per_nap), ceil(opt_sz_per_nap)
+            also, felso = floor(self.opt_sz_per_nap), ceil(self.opt_sz_per_nap)
             for i in szabadok:
                 if i != also and i != felso:
-                    hiba_2 += abs(opt_sz_per_nap - i)
+                    hiba_2 += abs(self.opt_sz_per_nap - i)
         elif self.eloszlas == 2:            # preciz eloszlasnal, probaljuk kiegyenliteni a noverek szabadnapjait
             hiba_2 += _szabadnap_hibak(s)
         hiba += hiba_2 * self.beta
 
         hiba_3 = 0
         if self.eloszlas == 1:
-            sz_p_nover = self.days / 3.5  # ennyi szabadnapja kell legyen egy novernek (ezt kell megkozelitse)
-            nvr_p_msz_p_n = self.nurses / 3 * (
-                        1 - sz_p_nover / self.days)  # ennyi nover kellene dolgozzon minden egyes muszakban(minden nap)
             muszak = self.megszamol_napokra_munkasok(s)
             for i in range(3):
                 for j in range(self.days):
-                    if muszak[i][j] != floor(nvr_p_msz_p_n) and muszak[i][j] != ceil(nvr_p_msz_p_n):
-                        hiba_3 += abs(nvr_p_msz_p_n - muszak[i][j])
+                    if muszak[i][j] != floor(self.nvr_p_msz_p_n) and muszak[i][j] != ceil(self.nvr_p_msz_p_n):
+                        hiba_3 += abs(self.nvr_p_msz_p_n - muszak[i][j])
             hiba += hiba_3 * self.theta
         elif self.eloszlas == 2:
             hiba_3 += self.hetre_eloszlas(s)
-        hiba += hiba_3 * self.gamma
+            hiba += hiba_3 * self.gamma
 
         hiba_4 = 0
         if self.sleep_rule == 2:
             hiba_4 = self.sleep_rule_check(s)
-            hiba += hiba_4
+            hiba += hiba_4 * self.zeta
 
         if kiertekel:
             return hiba_1, hiba_2, hiba_3, hiba_4
         else:
             return 1 / hiba
 
-    def annealing(self, t=100000):
+    def annealing(self, t):
         k = 0
 
         self._generate()
@@ -372,6 +370,8 @@ class NurseScheduling:
 
             sfitness = self.fitness(self._s, u_sor_cserelve=unap)
             wfitness = self.fitness(w, u_sor_cserelve=unap)
+            # sfitness = self.fitness(self._s)
+            # wfitness = self.fitness(w)
             if sfitness > 0 and wfitness > 0:
                 aux = 0.001
                 if t > aux:
@@ -400,12 +400,14 @@ class NurseScheduling:
 
     def _cross_ga(self, p1, p2):
         child = np.zeros((self.nurses, self.days), dtype=int)
-        for i in range(self.nurses):
-            r = random.uniform(0, 1)
-            if r < 0.5:
-                child[i] = p1[i]
-            else:
-                child[i] = p2[i]
+        r = random.uniform(0, 1)
+        rx = random.randint(0, self.nurses - 1)
+        if r < 0.5:
+            child = copy.deepcopy(p1)
+            child[rx] = copy.deepcopy(p2[rx])
+        else:
+            child = copy.deepcopy(p2)
+            child[rx] = copy.deepcopy(p1[rx])
         return child
 
     def genetic(self, population_size=20, mutation=0.2, cross=0.9):
@@ -492,9 +494,36 @@ class NurseScheduling:
                 elif self.eloszlas == 2:
                     gfit[i + _mu] = self.fitness(aux)
             self._qsort_best_evo_strategy(0, _mu + _lambda - 1, g, gfit)
-            # larger_elements_upfront(gfit, g, _mu+_lambda, _lambda+1)
+            # larger_elements_upfront(gfit, g, _mu+_lambda, _lambda)
             k += 1
         self._s = g[0]
 
     def get_s(self):
         return self._s
+
+    def plot_latex(self, s=None):
+        if s is None:
+            s = self.get_s()
+        rows = []
+        for i in range(self.nurses):
+            name = 'Nurse' + str(i)
+            rows.append(name)
+        columns = []
+        for i in range(self.days):
+            match i % 7:
+                case 0:
+                    columns.append('Monday')
+                case 1:
+                    columns.append('Tuesday')
+                case 2:
+                    columns.append('Wednesday')
+                case 3:
+                    columns.append('Thursday')
+                case 4:
+                    columns.append('Friday')
+                case 5:
+                    columns.append('Saturday')
+                case 6:
+                    columns.append('Sunday')
+        with open('eredmeny.tex', 'w') as f:
+            f.write(tabulate(s, headers=columns, tablefmt='latex', showindex=True))

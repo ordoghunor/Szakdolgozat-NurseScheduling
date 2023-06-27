@@ -1,8 +1,9 @@
 from datetime import datetime
 from NurseScheduling import kiszamol_szabad_per_nover, kiszamol_szabad_per_nap
+from parameters import *
 
 
-def initialize_log(nover, nap, max_ite, alpha, beta, theta, mu_, lambda_, method, eloszlas, gamma):
+def initialize_log():
     now = datetime.now()
     date_time = now.strftime("%m%d%Y_%H%M%S")
     filename = 'futtatasok/' + str(nover) + '_' + str(nap) + '_' + date_time + '.out'
@@ -10,13 +11,13 @@ def initialize_log(nover, nap, max_ite, alpha, beta, theta, mu_, lambda_, method
     print('Nover Nap Alpha Beta Theta gamma MaxIte Mu Lambda method eloszlas')
     print(
         '{}   {}   {}  {}   {}  {} {} {}   {}       {}    {}'.format(nover, nap, alpha, beta, theta, gamma,
-                                                                max_ite, mu_, lambda_, method, eloszlas))
+                                                                     max_it, mu_, lambda_, method, eloszlas))
     print('=====================================================================')
 
     outfile.write('Nover Nap Alpha Beta Theta gamma MaxIte Mu Lambda method eloszlas' + '\n')
     outfile.write(
         '{}   {}   {}  {}   {}  {} {} {}   {}       {}    {}'.format(nover, nap, alpha, beta, theta, gamma,
-                                                                max_ite, mu_, lambda_, method, eloszlas) +
+                                                                     max_it, mu_, lambda_, method, eloszlas) +
         '\n')
     outfile.write('=====================================================================' + '\n')
     return outfile

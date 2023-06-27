@@ -5,14 +5,14 @@ import timeit
 
 
 def main():
-    outfile = initialize_log(nover, nap, max_it, alpha, beta, theta, mu_, lambda_, method, eloszlas, gamma)
+    outfile = initialize_log()
 
-    n = NurseScheduling(nover, nap, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, e_hetre)
+    n = NurseScheduling(nover, nap, alpha, beta, theta, gamma, max_it, sleep_rule, eloszlas, max_cons, zeta, oszlop_csere, e_hetre)
     ido = None
     if method == 1:
-        ido = timeit.timeit(lambda: n.annealing(), number=1)
+        ido = timeit.timeit(lambda: n.annealing(t0), number=1)
     elif method == 2:
-        ido = timeit.timeit(lambda: n.genetic(population_size), number=1)
+        ido = timeit.timeit(lambda: n.genetic(population_size, mutation, crossover), number=1)
     elif method == 3:
         ido = timeit.timeit(lambda: n.evo_strategy(mu_, lambda_), number=1)
 
@@ -26,6 +26,7 @@ def main():
     print('h2 = ', h2)
     print('h3 = ', h3)
     print('h3 = ', h4)
+    n.plot_latex()
 
 
 if __name__ == '__main__':
